@@ -9,3 +9,5 @@ main = do
   -- apply subsetConstruction
   -- print DFA
      return ()
+
+--
