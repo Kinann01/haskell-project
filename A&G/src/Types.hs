@@ -4,7 +4,6 @@ module Types where
 import Data.Set (Set)
 import Data.Set qualified as Set
 
-
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
@@ -25,7 +24,6 @@ type NFA = (Set State, Set Symbol, Set Transition, State, Set State)
 data Transition = Transition { p :: State, c :: Symbol, q :: State }
     deriving (Eq, Show, Ord)
 
-
 -- DFA type after subset construction
 -- DFA = (Q, alphabet, transition function, q0, F)
 type DFA = (Set (Set State), Set Symbol, Set DFATransition, Set State, Set (Set State))
@@ -40,6 +38,3 @@ type DFA_ = (Set State, Set Symbol, Set DFATransition_, State, Set State)
 
 data DFATransition_ = DFATransition_ { rs :: State, sym_:: Symbol, sr :: State }
     deriving (Eq, Show, Ord)
-    
-
-

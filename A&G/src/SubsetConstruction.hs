@@ -9,7 +9,6 @@ import Data.List
 import ReadWrite
 
 
-
 ----- SUBSET CONSTRUCTION ALGORITHM
 -------------------------
 
@@ -34,7 +33,6 @@ getAllStates q = Set.fromList (map Set.fromList (delete [] (subsequences (Set.to
 -- which is orignally a final state in the NFA will be a final state in the DFA
 isFinal :: Set State -> Set State -> Bool
 isFinal states nfaFinalStates = not (Set.null (Set.intersection states nfaFinalStates))
-
 
 -- Subset Construction
 constructDFAFromNFA :: [String] -> DFA

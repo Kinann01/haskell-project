@@ -108,7 +108,6 @@ parseTransition_ transition =
           [p, c] -> DFATransition_ (parseState p) (parseSymbol c) (parseState "")
           _ -> error "Invalid transition format"
           
-
 getAllTransitions_ :: [String] -> Set DFATransition_
 getAllTransitions_ fileContent = Set.fromList (map parseTransition_ (drop 3 fileContent))
 
