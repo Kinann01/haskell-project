@@ -1,5 +1,4 @@
 module SubsetConstruction where
-
 ----
 
 import Types

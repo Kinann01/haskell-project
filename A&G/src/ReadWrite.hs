@@ -1,13 +1,10 @@
 module ReadWrite where
-
 ----
 
 import Types
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.List
-
-
 
 -- Parse state and symbol - both represented as a string
 parseState :: String -> State
@@ -50,48 +47,7 @@ processNFA fileContent = (allStates, alphabet, transitions, starting, accepting)
           allStates = getStates transitions
           alphabet = getAlphabet transitions
 
------- PRINT DFA AFTER SUBSET CONSTRUCTION
----------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------------
 
-showSetOfStates :: Set State -> String
-showSetOfStates set = intercalate "" (Set.toList set)
-
-showSymbol :: Symbol -> String
-showSymbol = id
-
--- showAlphabet :: Set Symbol -> IO()
--- showAlphabet alph = putStrLn (intercalate ", " (map showSymbol (Set.toList alph)))
-
-showStartingState :: Set State -> IO()
-showStartingState q = putStrLn (showSetOfStates q)
-
-showFinalState :: Set (Set State) -> IO()
-showFinalState qs = putStrLn (unwords (map showSetOfStates (Set.toList qs)))
-
-showTransitions :: Set DFATransition -> IO()
-showTransitions transitions =
-     mapM_ printDFATransition (Set.toList transitions)
-     where
-          printDFATransition (DFATransition r sym s) =
-               do
-                    putStr (showSetOfStates r)
-                    putStr " "
-                    putStr (showSymbol sym)
-                    putStr " "
-                    putStrLn (showSetOfStates s)
-
-printDFA :: DFA -> IO ()
-printDFA (states, alphabet, transitions, start, finals) =
-     do
-          print (Set.size states)
-          -- showAlphabet alphabet
-          showStartingState start
-          showFinalState finals
-          showTransitions transitions
-
-----------------------------------------------------
 -- Reading a DFA.
 -- Idea is similar to reading an NFA.
 
@@ -107,15 +63,69 @@ parseTransition_ transition =
           [p, c, q] -> DFATransition_ (parseState p) (parseSymbol c) (parseState q)
           [p, c] -> DFATransition_ (parseState p) (parseSymbol c) (parseState "")
           _ -> error "Invalid transition format"
-          
+
 getAllTransitions_ :: [String] -> Set DFATransition_
-getAllTransitions_ fileContent = Set.fromList (map parseTransition_ (drop 3 fileContent))
+getAllTransitions_ transitions = Set.fromList (map parseTransition_ transitions)
 
 processDFA :: [String] -> DFA_
 processDFA fileContent = (allStates, alphabet, transitions, starting, accepting)
      where
-          starting = parseState (fileContent !! 1)
-          accepting = Set.fromList (map parseState ( words ( fileContent !! 2)))
-          transitions = getAllTransitions_ fileContent
+          numStates : startState : finalStates : trans = fileContent
+          starting = parseState startState
+          accepting = Set.fromList (map parseState (words finalStates))
+          transitions = getAllTransitions_ trans
           allStates = getStates_ transitions
           alphabet = getAlphabet_ transitions
+
+
+
+------ PRINT DFA AFTER SUBSET CONSTRUCTION
+---------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------
+
+showSetOfStates :: Set State -> String
+showSetOfStates set = intercalate "" (Set.toList set)
+
+showSymbol :: Symbol -> String
+showSymbol = id
+
+showState :: Symbol -> String
+showState = id
+
+showStartingState :: Set State -> String
+showStartingState = showSetOfStates
+
+showFinalState :: Set (Set State) -> String
+showFinalState qs = unwords (map showSetOfStates (Set.toList qs))
+
+showTransitions :: Set DFATransition -> String
+showTransitions transitions =
+     unlines (map makeString (Set.toList transitions))
+     where
+          makeString (DFATransition r sym s) = showSetOfStates r ++ " " ++ showSymbol sym ++ " " ++ showSetOfStates s
+
+showDFA :: DFA -> [String]
+showDFA (states, alphabet, transitions, start, finals) =
+     [show (Set.size states) ++ "\n", showStartingState start ++ "\n", showFinalState finals ++ "\n", showTransitions transitions]
+
+----------------
+----------------
+-- Print DFA_
+
+showFinalState_ :: Set State -> String
+showFinalState_ qs = unwords (Set.toList qs)
+
+showTransitions_ :: Set DFATransition_ -> String
+showTransitions_ transitions =
+     unlines (map makeString (Set.toList transitions))
+     where
+          makeString (DFATransition_ r sym s) = r ++ " " ++ showSymbol sym ++ " " ++ s
+
+showDFA_ :: DFA_ -> [String]
+showDFA_ (states, alphabet, transitions, start, finals) =
+     [show (Set.size states) ++ "\n", showState start ++ "\n", showFinalState_ finals ++ "\n", showTransitions_ transitions]
+
+----------------------------------------------------
+----------------------------------------------------
+----------------------------------------------------

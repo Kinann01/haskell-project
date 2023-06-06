@@ -1,6 +1,6 @@
-aaabb
-babbaa
-aabbaa
-aaaaabbbb
-bab
+abab
+aabbab
+bbab
 aba
+bab
+aabb
