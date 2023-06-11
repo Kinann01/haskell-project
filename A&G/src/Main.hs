@@ -3,10 +3,7 @@ import TestWords
 import ReadWrite
 import System.Environment
 import Types
-
-
 import Minimization 
-
 import Data.Set (Set)
 import Data.Set qualified as Set
 
@@ -15,11 +12,9 @@ printDFA :: DFA -> IO ()
 printDFA dfa = do
      mapM_ putStr (showDFA dfa)
 
-
 printDFA_ :: DFA_ -> IO()
 printDFA_ dfa = do
      mapM_ putStr (showDFA_ dfa)
-
 
 main :: IO ()
 main = do
@@ -42,9 +37,9 @@ main = do
                do
                content <- readFile file
                let dfa = processDFA (lines content)
-               printDFA_ (newDFA dfa)
+               printDFA_ (mainMinimize dfa)
 
-          _ -> putStrLn ("Argument need to be provided!\nAvailable commands are:\n" 
+          _ -> putStrLn ("Argument needs to be provided!\nAvailable commands are:\n" 
                     ++ "1) runghc Main.hs -n file.nfa > file.dfa\n"
                     ++ "2) runghc Main.hs -t file.dfa < words.txt\n"
                     ++ "3) runghc Main.hs -m file.dfa > file_.dfa")

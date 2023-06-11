@@ -1,0 +1,13 @@
+5
+ae
+c
+ae 0 bh
+ae 1 f
+bh 0 g
+bh 1 c
+c 0 ae
+c 1 c
+f 0 c
+f 1 g
+g 0 g
+g 1 ae

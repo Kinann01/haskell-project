@@ -47,7 +47,6 @@ processNFA fileContent = (allStates, alphabet, transitions, starting, accepting)
           allStates = getStates transitions
           alphabet = getAlphabet transitions
 
-
 -- Reading a DFA.
 -- Idea is similar to reading an NFA.
 
@@ -76,7 +75,6 @@ processDFA fileContent = (allStates, alphabet, transitions, starting, accepting)
           transitions = getAllTransitions_ trans
           allStates = getStates_ transitions
           alphabet = getAlphabet_ transitions
-
 
 
 ------ PRINT DFA AFTER SUBSET CONSTRUCTION
