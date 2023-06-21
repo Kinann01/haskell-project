@@ -1,6 +1,0 @@
-abab
-aabbab
-bbab
-aba
-bab
-aabb

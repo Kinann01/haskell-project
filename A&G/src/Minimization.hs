@@ -1,81 +1,130 @@
 module Minimization where
-----
 
+----
 import Types
+    ( DFATransition_(DFATransition_), 
+    DFA_, 
+    State, 
+    Symbol )
+
 import Data.Set (Set)
 import Data.Set qualified as Set
-import Control.Monad
-import Data.List
+
+import Data.List ( foldl', 
+               nub,
+               sort)
 
 -- -- First we need to get rid of unreachable states 
-
 -- -- A state q is un reachable if it has no ingoing transitions
--- -- We will also remove states that are non generating. i.e. if there is a state q that you reach and it has no outgoing transitions, we also remove it
+-- -- We will also remove states that are non generating. i.e. 
+-- if there is a state q that you reach and it has no outgoing transitions, we also remove it (If it is not a final state)
 
-notReachable :: State -> Set DFATransition_ -> State -> Bool
-notReachable target transitions start =
-     reach (Set.singleton start) Set.empty
-     where
-     reach current visited
-          | Set.null current = False  -- Nothing to visit, return false
-          | Set.member target current = True -- Reachable, return true
-          | otherwise = reach next (Set.union visited current)  -- Proceed with next transition
-          where
-          next = Set.fromList [s | DFATransition_ q _ s <- Set.toList transitions, Set.member q current, not (Set.member s visited)]
+nextStates :: Set DFATransition_ -> State -> Set State
+nextStates transitions state = Set.fromList [s | DFATransition_ q _ s <- Set.toList transitions, q == state]
 
-removeUselessTransitions :: Set DFATransition_ -> State -> Set DFATransition_
-removeUselessTransitions transitions start =
-    Set.filter useful transitions
-     where
-          useful (DFATransition_ q _ s) = -- Remove non generating transitions so a transition q c "" is useless
-               s /= "" && notReachable q transitions start -- Remove unreachable states
+previousStates :: Set DFATransition_ -> State -> Set State
+previousStates transitions state = Set.fromList [q | DFATransition_ q _ s <- Set.toList transitions, s == state]
 
-removeUseless :: Set State -> Set DFATransition_ -> State -> Set State -- Deals with the states
-removeUseless states transitions start =
-     Set.filter canReach states
+transitionsFrom :: Set DFATransition_ -> State -> Set DFATransition_
+transitionsFrom transitions state = Set.filter (\(DFATransition_ q _ _) -> q == state) transitions
+
+transitionsTo :: Set DFATransition_ -> State -> Set DFATransition_
+transitionsTo transitions state = Set.filter (\(DFATransition_ _ _ s) -> s == state) transitions
+
+reachableStates :: Set DFATransition_ -> Set State -> Set State
+reachableStates transitions states =
+     if states == newStates then states else reachableStates transitions newStates
      where
-          canReach q = notReachable q transitions start
+          newStates = states `Set.union` Set.unions (Set.map (nextStates transitions) states)
+
+generatingStates :: Set DFATransition_ -> Set State -> Set State
+generatingStates transitions states =
+     if states == newStates then states else generatingStates transitions newStates
+     where
+          newStates = Set.union states (Set.unions (Set.map (previousStates transitions) states))
 
 reduce :: DFA_ -> DFA_
-reduce (states, symbols, transitions , start, finalStates) = (newAllStates, symbols, newTransitions , start , newFinal)
+reduce (states, symbols, transitions, start, finalStates) = 
+          (newStates, symbols, newTransitions, start, newFinalStates)
      where
-          newTransitions = removeUselessTransitions transitions start 
-          newAllStates = removeUseless states newTransitions start
-          newFinal = removeUseless finalStates newTransitions start
+          reachable = reachableStates transitions (Set.singleton start)
+          generating = generatingStates transitions finalStates
+          newStates = Set.intersection reachable  generating
+          newTransitions = Set.filter (\(DFATransition_ q _ s) -> 
+                    Set.member q newStates && Set.member s newStates) transitions
+          newFinalStates = Set.intersection finalStates newStates
+
+------ ||||||||
+------ ||||||||
+------ ||||||||
+------ REDUCTION DONE
+------ ||||||||
+------ ||||||||
+------ ||||||||
 
 -- Given a set of transitions, a state and a symbol, it returns the next state through the provided symbol
-nextTransition :: Set DFATransition_ -> State -> Symbol -> State
-nextTransition transitions currentState c = 
-     case Set.lookupMin (Set.filter (\(DFATransition_ p symbol q) -> p == currentState && symbol == c ) transitions )
+-- In order to support non complete transitions, it will return Maybe a State.
+-- If there is no transition from a state through a symbol c it will return nothing
+
+nextTransition :: Set DFATransition_ -> Maybe State -> Symbol -> Maybe State
+nextTransition transitions maybeCurrentState c =
+     case maybeCurrentState 
 
      of
-          Just(DFATransition_ _ _ nextState) -> nextState
-          Nothing -> error ("Transition not found for state " ++ show currentState ++ " and symbol " ++ show c)
+          Just currentState -> case Set.lookupMin (Set.filter (\(DFATransition_ p symbol q) -> p 
+                                   == currentState && symbol == c ) transitions )
+
+                              of
+                                   Just(DFATransition_ _ _ nextState) -> Just nextState
+                                   Nothing -> Nothing
+          Nothing -> Nothing
 
 -- Given a state p, (a string) a list of symbols returns a state q that is reached from p through the provided symbols
-followTransitions :: Set DFATransition_ -> State -> [Symbol] -> State
-followTransitions transitions currentState alphabet = foldl' (nextTransition transitions) currentState alphabet
+followTransitions :: Set DFATransition_ -> Maybe State -> [Symbol] -> Maybe State
+followTransitions transitions currentState alphabet = 
+          foldl' (nextTransition transitions) currentState alphabet
 
--- Given a dfa, and two states, we will determine if they are equivalent.
--- We use replicateM to get all the possible combinations of symbols we can get. 
--- Then we run both of the states through them and if they both reach a final state then they are equivalent.
+--
+-- checks if two states are equivalent
+-- Two states are equivalent iff, for any possible input string, 
+-- the automaton ends up in a final state from one state if and only if 
+-- it ends up in a final state from the other state.
 
-areEquivalent :: DFA_ -> State -> State -> Bool
-areEquivalent (states, symbols, transitions , _, finalStates) p q = all (\(pStates, qStates) -> Set.member pStates finalStates == Set.member qStates finalStates) (zip pStates qStates)
-     where
-          symbolLists = replicateM (Set.size states) (Set.toList symbols)
-          pStates = map (followTransitions transitions p) symbolLists 
-          qStates = map (followTransitions transitions q) symbolLists                    
+areEquivalent :: DFA_ -> Set (State, State) -> Maybe State -> Maybe State -> Bool
+areEquivalent dfa@(states, symbols, transitions, _, finalStates) visited maybeP maybeQ
+          -- (one is a final state and the other is not), they are not equivalent.
+          | fmap (`Set.member` finalStates) maybeP /= fmap (`Set.member` finalStates) maybeQ = False
+
+          -- Otherwise, if they are either both final or both non-final states,
+          | otherwise = case (maybeP, maybeQ) of
+
+                         -- If both states are not nothing,
+                         -- we have to check if we have already visited this pair 
+                         -- to avoid loops. If visited, 
+                         -- we already know they are equivalent, so we return 'True'. 
+                         -- If not, we recursively check for all symbols, 
+                         -- if the transitions from both states lead to equivalent states.
+
+                         (Just p, Just q) -> Set.member (p, q) visited || 
+                              and [ areEquivalent dfa (Set.insert (p, q) visited)
+                                        (followTransitions transitions (Just p) [symbol])
+                                        (followTransitions transitions (Just q) [symbol])
+                                   | symbol <- Set.toList symbols ]
+
+                              -- If either state is Nothing,
+                              -- we return True because there is nowhere to go from either
+                         _ -> True
+
 
 -- Since we are able to determine equivalance between states, 
 -- we have to partition the set of states into classes now where each class contains all the equivalent states.
 
 findEquivalent :: DFA_ -> State -> Set State
-findEquivalent dfa@(states, symbols, transitions , start, finalStates) p = 
-     Set.fromList( p : [q | q <- Set.toList states, areEquivalent dfa q p] )
+findEquivalent dfa@(states, symbols, transitions , start, finalStates) p =
+     Set.fromList ( p : [q | q <- Set.toList states, areEquivalent dfa Set.empty (Just q) (Just p)] )
 
 partitionClasses :: DFA_ ->  [Set State]
-partitionClasses dfa@(states, _ ,_, _,_) = 
+partitionClasses dfa@(states,_ ,_, _,_) =
    nub [findEquivalent dfa p | p <- Set.toList states]
 
 -- Now since we are able to partition all the states into equivalence classes. 
@@ -83,34 +132,46 @@ partitionClasses dfa@(states, _ ,_, _,_) =
 
 renameClasses :: DFA_ -> Set State
 renameClasses dfa = Set.fromList (map renameState (partitionClasses dfa))
-     where 
+     where
           equivalenceClasses = partitionClasses dfa
           renameState s = concat (sort (Set.toList s))
 
 findClass :: State -> [Set State] -> Set State
 findClass state classes = head [c | c <- classes, Set.member state c]
 
+-- a method that updates the transitions based on the equivalence classes. It constructs new transitions. 
 updateTransitions :: DFA_ -> Set DFATransition_
-updateTransitions dfa = Set.map update transitions
+updateTransitions dfa@(states, symbols, transitions, start, finalStates) = Set.map update transitions
      where
           equivalenceClasses = partitionClasses dfa
           newState s = concat (sort (Set.toList (findClass s equivalenceClasses)))
           update (DFATransition_ p c q) = DFATransition_ (newState p) c (newState q)
-          (states, symbols, transitions, start, finalStates) = dfa
 
+--We get the final states based on the new equivalent classes we have formed and on the old final states
+getFinalStates :: [Set State] -> Set State -> Set State
+getFinalStates classes oldFinal = Set.fromList [renameState s | s <- classes, any (`Set.member` oldFinal) s]
+    where renameState = concat . sort . Set.toList
+
+-- final
 minimizeDFA :: DFA_ -> DFA_
-minimizeDFA dfa = (newStates, symbols, newTransitions, newStart, newFinalStates)
+minimizeDFA dfa@(states, symbols, transitions, start, finalStates) = (newStates, symbols, newTransitions, newStart, newFinalStates)
      where
+          classes = partitionClasses dfa
           newStates = renameClasses dfa
           newTransitions = updateTransitions dfa
-          classes = partitionClasses dfa
           newStart = concat (sort (Set.toList (findClass start classes)))
-          newFinalStates = Set.filter (flip Set.member finalStates) newStates
-          (states, symbols, transitions, start, finalStates) = dfa
+          newFinalStates = getFinalStates classes finalStates
 
---- Reduced done
---- Divide into equivalence class done
---- Main Minimize -> 
 
+------ ||||||||
+------ ||||||||
+------ ||||||||
+------ Equivalence DONE
+------ ||||||||
+------ ||||||||
+------ ||||||||
+
+
+--- Reduce then Minimize
 mainMinimize :: DFA_ -> DFA_
 mainMinimize dfa = minimizeDFA (reduce dfa)

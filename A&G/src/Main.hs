@@ -1,12 +1,9 @@
-import SubsetConstruction
-import TestWords
-import ReadWrite
-import System.Environment
-import Types
-import Minimization 
-import Data.Set (Set)
-import Data.Set qualified as Set
-
+import SubsetConstruction ( constructDFAFromNFA )
+import TestWords ( simulateDFA_ )
+import ReadWrite ( processDFA, showDFA, showDFA_ )
+import System.Environment ( getArgs )
+import Types ( DFA, DFA_ )
+import Minimization ( mainMinimize ) 
 
 printDFA :: DFA -> IO ()
 printDFA dfa = do

@@ -27,7 +27,7 @@ parseTransition transition =
 
 -- Helper function that takes the input NFA as a list of string and returns a set of all the transitions
 getAllTransitions :: [String] -> Set Transition
-getAllTransitions fileContent = Set.fromList (map parseTransition (drop 3 fileContent))
+getAllTransitions transitions = Set.fromList (map parseTransition transitions)
 
 -- Helper function that returns a set of symbols in which the symbols is the alphabet used in the finite automaton
 getAlphabet :: Set Transition -> Set Symbol
@@ -35,15 +35,19 @@ getAlphabet = Set.map (\(Transition _ symbol _) -> symbol)
 
 -- Helper functions that takes a set of transitions and returns a set of states which contain all the states defined in the FA
 getStates :: Set Transition -> Set State
-getStates = Set.map (\(Transition p _ _) -> p)
+getStates transitions = Set.union s t
+     where
+          s = Set.map (\(Transition p _ _) -> p) transitions
+          t = Set.map (\(Transition _ _ q) -> q) transitions
 
 -- Main functon that creates the NFA using the previously mentioned helper functions
 processNFA :: [String] -> NFA
 processNFA fileContent = (allStates, alphabet, transitions, starting, accepting)
      where
-          starting = parseState (fileContent !! 1)
-          accepting = Set.singleton (parseState (fileContent !! 2))
-          transitions = getAllTransitions fileContent
+          numStates : startState : finalStates : trans = fileContent
+          starting = parseState startState
+          accepting = Set.fromList (map parseState (words finalStates))
+          transitions = getAllTransitions trans
           allStates = getStates transitions
           alphabet = getAlphabet transitions
 

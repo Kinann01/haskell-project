@@ -2,10 +2,16 @@ module TestWords where
 ----
 
 import Types
+    ( DFATransition_(DFATransition_),
+     DFA_,
+     State,
+     Symbol )
+
 import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.List
-import Control.Monad
+
+import Data.List ( find )
+import Control.Monad ( foldM )
 
 -- simulate the DFA on a string
 simulateDFA_ :: DFA_ -> String -> Bool

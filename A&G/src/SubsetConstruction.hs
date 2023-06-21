@@ -2,10 +2,15 @@ module SubsetConstruction where
 ----
 
 import Types
+    ( DFA,
+      DFATransition(DFATransition),
+      State,
+      Symbol,
+      Transition(Transition) )
 import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.List
-import ReadWrite
+import Data.List ( delete, subsequences )
+import ReadWrite ( processNFA )
 
 
 ----- SUBSET CONSTRUCTION ALGORITHM
