@@ -19,7 +19,8 @@ import ReadWrite ( processNFA )
 -- Function move, takes a state p, a symbol c and a tranition and returns a set of 
 -- states Q where every element of Q is a state that is reachable from p through c
 move :: Set State -> Symbol -> Set Transition -> Set State
-move q c transitions = Set.fromList [p | Transition q' sym p <- Set.toList transitions, sym == c, Set.member q' q]
+move q c transitions = Set.fromList [p | Transition q' sym p <- Set.toList transitions,
+     sym == c, Set.member q' q]
 
 -- Constructs a valid DFA transition
 createDFATransition :: Set State -> Symbol -> Set Transition -> DFATransition
@@ -50,4 +51,5 @@ constructDFAFromNFA input = (allStates, alphabet, transitions, starting, final)
           allStates = getAllStates nfaStates
           alphabet = nfaAlphabet
           final = Set.filter (isFinal nfaFinal) allStates
-          transitions = Set.fromList [createDFATransition state symbol nfaTransitions | state <- Set.toList allStates, symbol <- Set.toList alphabet]
+          transitions = Set.fromList [createDFATransition state symbol nfaTransitions | 
+               state <- Set.toList allStates, symbol <- Set.toList alphabet]

@@ -2,98 +2,115 @@ module ReadWrite where
 ----
 
 import Types
+    ( Symbol,
+      DFA,
+      DFATransition(DFATransition),
+      Transition(..),
+      State,
+      FiniteAutomata )
+     
 import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.List
+import Data.List ( intercalate )
 
--- Parse state and symbol - both represented as a string
-parseState :: String -> State
-parseState s = s
+
+---- Helpers for reading an NFA and reading a DFA
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+
+parseNFAState :: String -> State
+parseNFAState s
+     | notElem '|' s = s
+     | otherwise = error ("ERROR: State " ++ s ++ " can not" 
+          ++ "contain the character '|' in its name")
+
+parseDFAState :: String -> State
+parseDFAState = id
 
 parseSymbol :: String -> Symbol
-parseSymbol s = s
+parseSymbol = id
 
-------------------------------------------
-------------------------------------------
-------------------------------------------
+getAlphabet :: Set Transition -> Set Symbol
+getAlphabet = Set.map tr_sym
 
--- Helper function where given a string in the form "state symbol state", construts a transition of the valid type 
-parseTransition :: String -> Transition
-parseTransition transition =
+getStates :: Set Transition -> Set State
+getStates transitions = Set.union f t
+     where
+          f = Set.map tr_from transitions
+          t = Set.map tr_to transitions
+
+parseTransitionWith :: (String -> State) -> String -> Transition
+parseTransitionWith parseStateFunction transition =
      case words transition of
-          [p, c, q] -> Transition (parseState p) (parseSymbol c) (parseState q)
-          [p, c] -> Transition (parseState p) (parseSymbol c) (parseState "")
+          [p, c, q] -> Transition (parseStateFunction p) (parseSymbol c) (parseStateFunction q)
+          [p, c] -> Transition (parseStateFunction p) (parseSymbol c) (parseStateFunction "")
           _ -> error "Invalid transition format"
 
--- Helper function that takes the input NFA as a list of string and returns a set of all the transitions
-getAllTransitions :: [String] -> Set Transition
-getAllTransitions transitions = Set.fromList (map parseTransition transitions)
+getAllTransitionsWith :: (String -> Transition) -> [String] -> Set Transition
+getAllTransitionsWith parseTransitionFunction transitions = 
+     Set.fromList (map parseTransitionFunction transitions)
 
--- Helper function that returns a set of symbols in which the symbols is the alphabet used in the finite automaton
-getAlphabet :: Set Transition -> Set Symbol
-getAlphabet = Set.map (\(Transition _ symbol _) -> symbol)
 
--- Helper functions that takes a set of transitions and returns a set of states which contain all the states defined in the FA
-getStates :: Set Transition -> Set State
-getStates transitions = Set.union s t
-     where
-          s = Set.map (\(Transition p _ _) -> p) transitions
-          t = Set.map (\(Transition _ _ q) -> q) transitions
+------ Reading an NFA
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
--- Main functon that creates the NFA using the previously mentioned helper functions
-processNFA :: [String] -> NFA
+parseNFATransition :: String -> Transition
+parseNFATransition = parseTransitionWith parseNFAState
+
+getAllNFATransitions :: [String] -> Set Transition
+getAllNFATransitions = getAllTransitionsWith parseNFATransition
+
+processNFA :: [String] -> FiniteAutomata
 processNFA fileContent = (allStates, alphabet, transitions, starting, accepting)
      where
           numStates : startState : finalStates : trans = fileContent
-          starting = parseState startState
-          accepting = Set.fromList (map parseState (words finalStates))
-          transitions = getAllTransitions trans
+          starting = parseNFAState startState
+          accepting = Set.fromList (map parseNFAState (words finalStates))
+          transitions = getAllNFATransitions trans
           allStates = getStates transitions
           alphabet = getAlphabet transitions
 
--- Reading a DFA.
--- Idea is similar to reading an NFA.
+------ Reading a DFA.
+------ Similar to reading an NFA. Slight differences
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
-getAlphabet_ :: Set DFATransition_ -> Set Symbol
-getAlphabet_ = Set.map (\(DFATransition_ _ symbol _) -> symbol)
+parseDFATransition_ :: String -> Transition
+parseDFATransition_ = parseTransitionWith parseDFAState
 
-getStates_ :: Set DFATransition_ -> Set State
-getStates_ = Set.map (\(DFATransition_ p _ _) -> p)
+getAllDFATransitions :: [String] -> Set Transition
+getAllDFATransitions = getAllTransitionsWith parseDFATransition_
 
-parseTransition_ :: String -> DFATransition_
-parseTransition_ transition =
-     case words transition of
-          [p, c, q] -> DFATransition_ (parseState p) (parseSymbol c) (parseState q)
-          [p, c] -> DFATransition_ (parseState p) (parseSymbol c) (parseState "")
-          _ -> error "Invalid transition format"
-
-getAllTransitions_ :: [String] -> Set DFATransition_
-getAllTransitions_ transitions = Set.fromList (map parseTransition_ transitions)
-
-processDFA :: [String] -> DFA_
+processDFA :: [String] -> FiniteAutomata
 processDFA fileContent = (allStates, alphabet, transitions, starting, accepting)
      where
           numStates : startState : finalStates : trans = fileContent
-          starting = parseState startState
-          accepting = Set.fromList (map parseState (words finalStates))
-          transitions = getAllTransitions_ trans
-          allStates = getStates_ transitions
-          alphabet = getAlphabet_ transitions
+          starting = parseDFAState startState
+          accepting = Set.fromList (map parseDFAState (words finalStates))
+          transitions = getAllDFATransitions trans
+          allStates = getStates transitions
+          alphabet = getAlphabet transitions
 
 
 ------ PRINT DFA AFTER SUBSET CONSTRUCTION
----------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------------
-
-showSetOfStates :: Set State -> String
-showSetOfStates set = intercalate "" (Set.toList set)
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 showSymbol :: Symbol -> String
 showSymbol = id
 
 showState :: Symbol -> String
 showState = id
+
+----------------------------------------------------------------------------------------------------
+
+showSetOfStates :: Set State -> String
+showSetOfStates set = intercalate "|" (Set.toList set)
 
 showStartingState :: Set State -> String
 showStartingState = showSetOfStates
@@ -105,29 +122,34 @@ showTransitions :: Set DFATransition -> String
 showTransitions transitions =
      unlines (map makeString (Set.toList transitions))
      where
-          makeString (DFATransition r sym s) = showSetOfStates r ++ " " ++ showSymbol sym ++ " " ++ showSetOfStates s
+          makeString (DFATransition r sym s) = showSetOfStates r ++ " " ++ 
+               showSymbol sym ++ " " ++ showSetOfStates s
 
 showDFA :: DFA -> [String]
 showDFA (states, alphabet, transitions, start, finals) =
-     [show (Set.size states) ++ "\n", showStartingState start ++ "\n", showFinalState finals ++ "\n", showTransitions transitions]
+     [show (Set.size states) ++ "\n", showStartingState start ++ "\n", showFinalState finals 
+          ++ "\n", showTransitions transitions]
 
-----------------
-----------------
--- Print DFA_
+
+------ Print Finite Automata
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 showFinalState_ :: Set State -> String
 showFinalState_ qs = unwords (Set.toList qs)
 
-showTransitions_ :: Set DFATransition_ -> String
+showTransitions_ :: Set Transition -> String
 showTransitions_ transitions =
      unlines (map makeString (Set.toList transitions))
      where
-          makeString (DFATransition_ r sym s) = r ++ " " ++ showSymbol sym ++ " " ++ s
+          makeString (Transition r sym s) = r ++ " " ++ showSymbol sym ++ " " ++ s
 
-showDFA_ :: DFA_ -> [String]
+showDFA_ :: FiniteAutomata -> [String]
 showDFA_ (states, alphabet, transitions, start, finals) =
-     [show (Set.size states) ++ "\n", showState start ++ "\n", showFinalState_ finals ++ "\n", showTransitions_ transitions]
+     [show (Set.size states) ++ "\n", showState start ++ "\n", showFinalState_ finals
+           ++ "\n", showTransitions_ transitions]
 
-----------------------------------------------------
-----------------------------------------------------
-----------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
