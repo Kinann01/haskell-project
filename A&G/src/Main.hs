@@ -1,6 +1,6 @@
 import SubsetConstruction ( constructDFAFromNFA )
 import TestWords ( simulateDFA_ )
-import ReadWrite ( processDFA, showDFA, showDFA_)
+import ReadWrite ( processDFA, showDFA, showFA)
 import System.Environment ( getArgs )
 import Types ( DFA, FiniteAutomata )
 import Minimization ( mainMinimize ) 
@@ -9,9 +9,9 @@ printDFA :: DFA -> IO ()
 printDFA dfa = do
      mapM_ putStr (showDFA dfa)
 
-printDFA_ :: FiniteAutomata -> IO()
-printDFA_ dfa = do
-     mapM_ putStr (showDFA_ dfa)
+printFA :: FiniteAutomata -> IO()
+printFA dfa = do
+     mapM_ putStr (showFA dfa)
 
 main :: IO ()
 main = do
@@ -35,7 +35,7 @@ main = do
                do
                content <- readFile file
                let dfa = processDFA (lines content)
-               printDFA_ (mainMinimize dfa)
+               printFA (mainMinimize dfa)
 
           _ -> putStrLn ("Argument needs to be provided!\nAvailable commands are:\n" 
                     ++ "1) runghc Main.hs -n file.nfa > file.dfa\n"

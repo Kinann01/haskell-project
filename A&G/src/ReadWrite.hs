@@ -79,11 +79,11 @@ processNFA fileContent = (allStates, alphabet, transitions, starting, accepting)
 ----------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
 
-parseDFATransition_ :: String -> Transition
-parseDFATransition_ = parseTransitionWith parseDFAState
+parseDFATransition :: String -> Transition
+parseDFATransition = parseTransitionWith parseDFAState
 
 getAllDFATransitions :: [String] -> Set Transition
-getAllDFATransitions = getAllTransitionsWith parseDFATransition_
+getAllDFATransitions = getAllTransitionsWith parseDFATransition
 
 processDFA :: [String] -> FiniteAutomata
 processDFA fileContent = (allStates, alphabet, transitions, starting, accepting)
@@ -136,19 +136,19 @@ showDFA (states, alphabet, transitions, start, finals) =
 ----------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
 
-showFinalState_ :: Set State -> String
-showFinalState_ qs = unwords (Set.toList qs)
+showFState :: Set State -> String
+showFState qs = unwords (Set.toList qs)
 
-showTransitions_ :: Set Transition -> String
-showTransitions_ transitions =
+showTrans :: Set Transition -> String
+showTrans transitions =
      unlines (map makeString (Set.toList transitions))
      where
           makeString (Transition r sym s) = r ++ " " ++ showSymbol sym ++ " " ++ s
 
-showDFA_ :: FiniteAutomata -> [String]
-showDFA_ (states, alphabet, transitions, start, finals) =
-     [show (Set.size states) ++ "\n", showState start ++ "\n", showFinalState_ finals
-           ++ "\n", showTransitions_ transitions]
+showFA :: FiniteAutomata -> [String]
+showFA (states, alphabet, transitions, start, finals) =
+     [show (Set.size states) ++ "\n", showState start ++ "\n", showFState finals
+           ++ "\n", showTrans transitions]
 
 ----------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
