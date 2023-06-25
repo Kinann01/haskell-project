@@ -1,5 +1,5 @@
 import SubsetConstruction ( constructDFAFromNFA )
-import TestWords ( simulateDFA_ )
+import TestWords ( simulateDFA )
 import ReadWrite ( processDFA, showDFA, showFA)
 import System.Environment ( getArgs )
 import Types ( DFA, FiniteAutomata )
@@ -10,8 +10,8 @@ printDFA dfa = do
      mapM_ putStr (showDFA dfa)
 
 printFA :: FiniteAutomata -> IO()
-printFA dfa = do
-     mapM_ putStr (showFA dfa)
+printFA fa = do
+     mapM_ putStr (showFA fa)
 
 main :: IO ()
 main = do
@@ -28,7 +28,7 @@ main = do
                let dfa = processDFA (lines content)
                wordsToTest <- getContents
                let wordsList = lines wordsToTest
-               mapM_ (\word -> putStrLn (word ++ ": " ++ if simulateDFA_ dfa word then "accepted" 
+               mapM_ (\word -> putStrLn (word ++ ": " ++ if simulateDFA dfa word then "accepted" 
                     else "not accepted")) wordsList
 
           ["-m", file] ->

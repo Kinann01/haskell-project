@@ -14,16 +14,16 @@ import Data.List ( find )
 import Control.Monad ( foldM )
 
 -- simulate the DFA on a string
-simulateDFA_ :: FiniteAutomata -> String -> Bool
-simulateDFA_ (states, alphabet, transitionFunction, startState, finalStates) string =
+simulateDFA :: FiniteAutomata -> String -> Bool
+simulateDFA (states, alphabet, transitionFunction, startState, finalStates) string =
      let symbols = map (:[]) string 
-         maybeFinalState = foldM (applyTransition_ transitionFunction) startState symbols
+         maybeFinalState = foldM (applyTransition transitionFunction) startState symbols
      in
           any (\s -> Set.member s finalStates) maybeFinalState
 
 -- look up the next state in the transition function
-applyTransition_ :: Set Transition -> State -> Symbol -> Maybe State
-applyTransition_ transitionFunction currentState symbol =
+applyTransition :: Set Transition -> State -> Symbol -> Maybe State
+applyTransition transitionFunction currentState symbol =
      let maybeTransition = find (\(Transition r sym s) -> r == currentState && sym == symbol) 
           (Set.toList transitionFunction)
      
