@@ -3,7 +3,7 @@ module TestWords where
 
 import Types
     ( Transition (Transition),
-     FiniteAutomata,
+     FiniteAutomaton,
      State,
      Symbol )
 
@@ -14,7 +14,7 @@ import Data.List ( find )
 import Control.Monad ( foldM )
 
 -- simulate the DFA on a string
-simulateDFA :: FiniteAutomata -> String -> Bool
+simulateDFA :: FiniteAutomaton -> String -> Bool
 simulateDFA (states, alphabet, transitionFunction, startState, finalStates) string =
      let symbols = map (:[]) string 
          maybeFinalState = foldM (applyTransition transitionFunction) startState symbols

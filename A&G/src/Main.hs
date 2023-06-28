@@ -2,14 +2,14 @@ import SubsetConstruction ( constructDFAFromNFA )
 import TestWords ( simulateDFA )
 import ReadWrite ( processDFA, showDFA, showFA)
 import System.Environment ( getArgs )
-import Types ( DFA, FiniteAutomata )
+import Types ( DFA, FiniteAutomaton )
 import Minimization ( mainMinimize ) 
 
 printDFA :: DFA -> IO ()
 printDFA dfa = do
      mapM_ putStr (showDFA dfa)
 
-printFA :: FiniteAutomata -> IO()
+printFA :: FiniteAutomaton -> IO()
 printFA fa = do
      mapM_ putStr (showFA fa)
 

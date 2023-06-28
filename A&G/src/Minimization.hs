@@ -4,7 +4,7 @@ module Minimization where
 import Types
     ( Transition (Transition),
     State,
-    Symbol, FiniteAutomata )
+    Symbol, FiniteAutomaton )
 
 import Data.Set (Set)
 import Data.Set qualified as Set
@@ -39,7 +39,7 @@ reachableStates = computeStates nextStates
 generatingStates :: Set Transition -> Set State -> Set State
 generatingStates = computeStates previousStates
 
-reduce :: FiniteAutomata -> FiniteAutomata
+reduce :: FiniteAutomaton -> FiniteAutomaton
 reduce (states, symbols, transitions, start, finalStates) = 
           (newStates, symbols, newTransitions, start, newFinalStates)
      where
@@ -85,7 +85,7 @@ followTransitions transitions currentState alphabet =
 -- the automaton ends up in a final state from one state if and only if 
 -- it ends up in a final state from the other state.
 
-areEquivalent :: FiniteAutomata -> Set (State, State) -> Maybe State -> Maybe State -> Bool
+areEquivalent :: FiniteAutomaton -> Set (State, State) -> Maybe State -> Maybe State -> Bool
 areEquivalent dfa@(states, symbols, transitions, _, finalStates) visited maybeP maybeQ
      -- (one is a final state and the other is not), they are not equivalent.
      | fmap (`Set.member` finalStates) maybeP /= fmap (`Set.member` finalStates) maybeQ = False
@@ -115,19 +115,19 @@ areEquivalent dfa@(states, symbols, transitions, _, finalStates) visited maybeP 
 -- we have to partition the set of states into classes now where each 
 -- class contains all the equivalent states.
 
-findEquivalent :: FiniteAutomata -> State -> Set State
+findEquivalent :: FiniteAutomaton -> State -> Set State
 findEquivalent dfa@(states, symbols, transitions , start, finalStates) p =
      Set.fromList ( p : [q | q <- Set.toList states, 
           areEquivalent dfa Set.empty (Just q) (Just p)] )
 
-partitionClasses :: FiniteAutomata ->  [Set State]
+partitionClasses :: FiniteAutomaton ->  [Set State]
 partitionClasses dfa@(states,_ ,_, _,_) =
    nub [findEquivalent dfa p | p <- Set.toList states]
 
 -- Now since we are able to partition all the states into equivalence classes. 
 -- We accordingly update the name of the states, the transitions and construct the new DFA
 
-renameClasses :: FiniteAutomata -> Set State
+renameClasses :: FiniteAutomaton -> Set State
 renameClasses dfa = Set.fromList (map renameState (partitionClasses dfa))
      where
           equivalenceClasses = partitionClasses dfa
@@ -138,7 +138,7 @@ findClass state classes = head [c | c <- classes, Set.member state c]
 
 -- a method that updates the transitions based on the equivalence classes. 
 -- It constructs new transitions. 
-updateTransitions :: FiniteAutomata -> Set Transition
+updateTransitions :: FiniteAutomaton -> Set Transition
 updateTransitions dfa@(states, symbols, transitions, start, finalStates) = 
      Set.map update transitions
      where
@@ -154,7 +154,7 @@ getFinalStates classes oldFinal = Set.fromList [renameState s |
      where renameState = concat . sort . Set.toList
 
 -- final
-minimizeDFA :: FiniteAutomata -> FiniteAutomata
+minimizeDFA :: FiniteAutomaton -> FiniteAutomaton
 minimizeDFA dfa@(states, symbols, transitions, start, finalStates) = 
           (newStates, symbols, newTransitions, newStart, newFinalStates)
      where
@@ -175,5 +175,5 @@ minimizeDFA dfa@(states, symbols, transitions, start, finalStates) =
 
 
 --- Reduce then Minimize
-mainMinimize :: FiniteAutomata -> FiniteAutomata
+mainMinimize :: FiniteAutomaton -> FiniteAutomaton
 mainMinimize dfa = minimizeDFA (reduce dfa)

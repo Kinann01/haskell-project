@@ -7,7 +7,7 @@ import Types
       DFATransition(DFATransition),
       Transition(..),
       State,
-      FiniteAutomata )
+      FiniteAutomaton )
      
 import Data.Set (Set)
 import Data.Set qualified as Set
@@ -52,49 +52,26 @@ getAllTransitionsWith parseTransitionFunction transitions =
      Set.fromList (map parseTransitionFunction transitions)
 
 
------- Reading an NFA
+------ Reading an NFA or DFA
 ----------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
 
-parseNFATransition :: String -> Transition
-parseNFATransition = parseTransitionWith parseNFAState
-
-getAllNFATransitions :: [String] -> Set Transition
-getAllNFATransitions = getAllTransitionsWith parseNFATransition
-
-processNFA :: [String] -> FiniteAutomata
-processNFA fileContent = (allStates, alphabet, transitions, starting, accepting)
+processFA :: (String -> State) -> [String] -> FiniteAutomaton 
+processFA parsingFunction fileContent  = (allStates, alphabet, transitions, starting, accepting)
      where
           numStates : startState : finalStates : trans = fileContent
-          starting = parseNFAState startState
-          accepting = Set.fromList (map parseNFAState (words finalStates))
-          transitions = getAllNFATransitions trans
+          starting = parsingFunction startState
+          accepting = Set.fromList (map parsingFunction (words finalStates))
+          transitions = getAllTransitionsWith (parseTransitionWith parsingFunction) trans
           allStates = getStates transitions
           alphabet = getAlphabet transitions
 
------- Reading a DFA.
------- Similar to reading an NFA. Slight differences
-----------------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------
+processNFA :: [String] -> FiniteAutomaton
+processNFA = processFA parseNFAState
 
-parseDFATransition :: String -> Transition
-parseDFATransition = parseTransitionWith parseDFAState
-
-getAllDFATransitions :: [String] -> Set Transition
-getAllDFATransitions = getAllTransitionsWith parseDFATransition
-
-processDFA :: [String] -> FiniteAutomata
-processDFA fileContent = (allStates, alphabet, transitions, starting, accepting)
-     where
-          numStates : startState : finalStates : trans = fileContent
-          starting = parseDFAState startState
-          accepting = Set.fromList (map parseDFAState (words finalStates))
-          transitions = getAllDFATransitions trans
-          allStates = getStates transitions
-          alphabet = getAlphabet transitions
-
+processDFA :: [String] -> FiniteAutomaton
+processDFA = processFA parseDFAState
 
 ------ PRINT DFA AFTER SUBSET CONSTRUCTION
 ----------------------------------------------------------------------------------------------------
@@ -145,7 +122,7 @@ showTrans transitions =
      where
           makeString (Transition r sym s) = r ++ " " ++ showSymbol sym ++ " " ++ s
 
-showFA :: FiniteAutomata -> [String]
+showFA :: FiniteAutomaton -> [String]
 showFA (states, alphabet, transitions, start, finals) =
      [show (Set.size states) ++ "\n", showState start ++ "\n", showFState finals
            ++ "\n", showTrans transitions]

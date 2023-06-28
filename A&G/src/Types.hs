@@ -13,7 +13,7 @@ type State = String
 type Symbol = String
 
 -- INPUT NFA/DFA TYPE
-type FiniteAutomata = (Set State, Set Symbol, Set Transition, State, Set State)
+type FiniteAutomaton = (Set State, Set Symbol, Set Transition, State, Set State)
 
 -- Transition from a state p to a state q through a symbol c
 data Transition = Transition { tr_from :: State, tr_sym :: Symbol, tr_to :: State }
